@@ -8,6 +8,11 @@ import sqlite3
 import psycopg2 # Postgres 사용을 위해 import
 from psycopg2.extras import DictCursor # 결과를 dict처럼 다루기 위해 import
 from typing import List, Dict, Any, Optional
+from db import get_conn, init_schema
+
+@app.on_event("startup")
+def _init():
+    init_schema()
 
 # --- 수정된 부분 ---
 # 기존 DB_PATH 대신 새로운 db.py 모듈 사용
@@ -206,4 +211,5 @@ def move_bulk(body: MoveBulkIn):
 try:
     app.mount("/app", StaticFiles(directory="wwwroot", html=True), name="app")
 except Exception as e:
+
     print(f"Warning: wwwroot directory not found. Static files disabled. ({e})")
