@@ -35,24 +35,29 @@ def _ensure_ssl_and_params(dsn: str) -> str:
 # -------------------------
 def get_conn():
     """
-    Postgres: DictCursor 사용 + sslmode=require 보정 + 재시도
+    Postgres: DictCursor 사용 + sslmode=require 보정 + 재시도 + sslrootcert 지정
     SQLite: sqlite3.Row 사용 (기존 기능 그대로)
     """
     if _is_postgres():
         import psycopg2
         from psycopg2.extras import DictCursor
+        import certifi  # <-- 추가
 
         dsn = _ensure_ssl_and_params(DATABASE_URL)
 
         last_err = None
-        # Render 첫 연결에서 SSL이 끊기는 케이스 대비 재시도
-        for attempt in range(5):  # 0,1,2,3,4 → 최대 ~8초 대기
+        for attempt in range(5):
             try:
-                return psycopg2.connect(dsn, cursor_factory=DictCursor)
+                # sslrootcert에 certifi 번들을 명시
+                return psycopg2.connect(
+                    dsn,
+                    cursor_factory=DictCursor,
+                    sslrootcert=certifi.where(),
+                )
             except psycopg2.OperationalError as e:
                 last_err = e
                 time.sleep(min(2 ** attempt, 8))
-        raise last_err  # 재시도 후에도 실패하면 그대로 올림
+        raise last_err
 
     # SQLite (로컬)
     conn = sqlite3.connect(SQLITE_PATH, check_same_thread=False)
@@ -159,3 +164,4 @@ def _init_schema_postgres():
     finally:
         cur.close()
         conn.close()
+
