@@ -1,7 +1,7 @@
 # db.py
-import os
-import sqlite3
+import os, sqlite3, time
 from contextlib import closing
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 # -------------------------
 # 엔진 판별 / 경로 설정
@@ -13,20 +13,50 @@ def _is_postgres() -> bool:
     return DATABASE_URL.startswith(("postgres://", "postgresql://"))
 
 # -------------------------
+# Postgres DSN 보정 (SSL 필수 + 커넥션 옵션)
+# -------------------------
+def _ensure_ssl_and_params(dsn: str) -> str:
+    if not dsn or not _is_postgres():
+        return dsn
+    p = urlparse(dsn)
+    q = dict(parse_qsl(p.query, keep_blank_values=True))
+    # 필수/권장 옵션
+    q.setdefault("sslmode", "require")
+    q.setdefault("connect_timeout", "10")
+    q.setdefault("keepalives", "1")
+    q.setdefault("keepalives_idle", "30")
+    q.setdefault("keepalives_interval", "10")
+    q.setdefault("keepalives_count", "5")
+    new = p._replace(query=urlencode(q))
+    return urlunparse(new)
+
+# -------------------------
 # 커넥션
 # -------------------------
 def get_conn():
     """
-    Postgres: DictCursor로 컬럼명 접근 가능
-    SQLite: sqlite3.Row로 컬럼명 접근 가능
+    Postgres: DictCursor 사용 + sslmode=require 보정 + 재시도
+    SQLite: sqlite3.Row 사용 (기존 기능 그대로)
     """
     if _is_postgres():
         import psycopg2
         from psycopg2.extras import DictCursor
-        return psycopg2.connect(DATABASE_URL, cursor_factory=DictCursor)
+
+        dsn = _ensure_ssl_and_params(DATABASE_URL)
+
+        last_err = None
+        # Render 첫 연결에서 SSL이 끊기는 케이스 대비 재시도
+        for attempt in range(5):  # 0,1,2,3,4 → 최대 ~8초 대기
+            try:
+                return psycopg2.connect(dsn, cursor_factory=DictCursor)
+            except psycopg2.OperationalError as e:
+                last_err = e
+                time.sleep(min(2 ** attempt, 8))
+        raise last_err  # 재시도 후에도 실패하면 그대로 올림
+
+    # SQLite (로컬)
     conn = sqlite3.connect(SQLITE_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    # 외래키 등 사용할 때를 대비
     with closing(conn.cursor()) as cur:
         cur.execute("PRAGMA foreign_keys = ON;")
     return conn
