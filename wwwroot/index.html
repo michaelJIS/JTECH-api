@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>JTECH 창고관리</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, "Noto Sans KR", sans-serif; margin:0; background:#f7f7f8; color:#111; }
+    header { position:sticky; top:0; background:#fff; padding:14px 16px; box-shadow:0 1px 0 rgba(0,0,0,.06); }
+    main { padding:16px; }
+    .card { background:#fff; border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,.06); padding:16px; margin-bottom:14px; }
+    .row { display:flex; gap:8px; }
+    input, button, select { font-size:16px; padding:12px; border-radius:10px; border:1px solid #e5e7eb; width:100%; }
+    button { background:#111; color:#fff; border:none; }
+    .muted { color:#6b7280; font-size:14px; }
+    .ok { color:#16a34a; }
+    .err { color:#dc2626; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>JTECH 창고관리</strong>
+  </header>
+  <main>
+    <div class="card">
+      <h3>상자 스캔 조회</h3>
+      <div class="row">
+        <input id="scanInput" placeholder="바코드 / 상자ID 입력" />
+        <button onclick="scanBox()">조회</button>
+      </div>
+      <p id="scanResult" class="muted">/api/boxes/by-scan 로 조회합니다.</p>
+    </div>
+
+    <div class="card">
+      <h3>단일 이동</h3>
+      <div class="row">
+        <input id="boxId" placeholder="상자ID" />
+        <input id="toLocation" placeholder="이동할 위치(예: A-01-03)" />
+      </div>
+      <div class="row">
+        <input id="movedBy" placeholder="작업자 이름(선택)" />
+        <button onclick="moveOne()">이동 기록</button>
+      </div>
+      <p class="muted">/api/move/bulk 로 1건 배열 보내 이동/로그를 기록합니다.</p>
+      <pre id="moveOneResult" class="mono muted"></pre>
+    </div>
+
+    <div class="card">
+      <h3>범위 이동</h3>
+      <div class="row">
+        <input id="fromBox" placeholder="시작 상자ID (예: BX0001)" />
+        <input id="toBox" placeholder="끝 상자ID (예: BX0010)" />
+      </div>
+      <div class="row">
+        <input id="targetLoc" placeholder="목표 위치" />
+        <button onclick="moveRange()">범위 이동</button>
+      </div>
+      <pre id="rangeResult" class="mono muted"></pre>
+    </div>
+
+    <p class="muted">상태: <span id="health" class="muted">확인 중...</span></p>
+  </main>
+
+<script>
+async function scanBox(){
+  const v = document.getElementById('scanInput').value.trim();
+  if (!v) return;
+  const r = await fetch(`/api/boxes/by-scan?code=${encodeURIComponent(v)}`);
+  const j = await r.json();
+  document.getElementById('scanResult').textContent = JSON.stringify(j, null, 2);
+}
+
+async function moveOne(){
+  const boxId = document.getElementById('boxId').value.trim();
+  const toLoc = document.getElementById('toLocation').value.trim();
+  const movedBy = document.getElementById('movedBy').value.trim() || null;
+
+  if (!boxId || !toLoc) return;
+  const payload = [{ box_id: boxId, to_location: toLoc, moved_by: movedBy }];
+  const r = await fetch('/api/move/bulk', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ moves: payload }) });
+  const j = await r.json();
+  document.getElementById('moveOneResult').textContent = JSON.stringify(j, null, 2);
+}
+
+async function moveRange(){
+  const fromBox = document.getElementById('fromBox').value.trim();
+  const toBox = document.getElementById('toBox').value.trim();
+  const targetLoc = document.getElementById('targetLoc').value.trim();
+  if (!fromBox || !toBox || !targetLoc) return;
+  const r = await fetch(`/api/move/by-range?from=${encodeURIComponent(fromBox)}&to=${encodeURIComponent(toBox)}&target=${encodeURIComponent(targetLoc)}`, { method:'POST' });
+  const j = await r.json();
+  document.getElementById('rangeResult').textContent = JSON.stringify(j, null, 2);
+}
+
+(async () => {
+  try {
+    const r = await fetch('/health');
+    const t = await r.text();
+    document.getElementById('health').textContent = t.includes('ok') ? '서버 ok' : t;
+    document.getElementById('health').className = t.includes('ok') ? 'ok' : 'err';
+  } catch(e) {
+    document.getElementById('health').textContent = '불가';
+    document.getElementById('health').className = 'err';
+  }
+})();
+</script>
+</body>
+</html>
