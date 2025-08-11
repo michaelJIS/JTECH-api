@@ -5,70 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>JTECH 재고 관리</title>
     <style>
-        /* --- 기본 & 레이아웃 --- */
         :root {
-            --primary-color: #007bff;
+            --primary-color: #0d6efd;
             --secondary-color: #6c757d;
-            --success-color: #28a745;
+            --success-color: #198754;
             --danger-color: #dc3545;
+            --warning-color: #ffc107;
             --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --dark-color: #212529;
+            --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            --border-radius: 0.5rem;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --input-height: 3rem;
         }
         body {
             font-family: var(--font-family);
             margin: 0;
             background-color: var(--light-color);
             color: var(--dark-color);
-            overscroll-behavior-y: contain; /* iOS 당겨서 새로고침 방지 */
+            overscroll-behavior-y: contain;
         }
         .container {
-            padding: 1.5rem 1rem;
+            padding: 1rem;
             max-width: 600px;
             margin: 0 auto;
         }
         header {
             text-align: center;
             margin-bottom: 1.5rem;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 1rem;
-        }
-        h1 {
             color: var(--primary-color);
-            margin: 0;
         }
-        /* --- 섹션별 스타일 --- */
         .section {
             background-color: #ffffff;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
-            padding: 1.5rem;
+            padding: 1rem 1.25rem;
             margin-bottom: 1.5rem;
         }
         .section-title {
             margin-top: 0;
             margin-bottom: 1rem;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
         }
-        /* --- UI 요소들 --- */
         .input-group {
             display: flex;
-            margin-bottom: 1rem;
+            align-items: center;
+            gap: 0.5rem;
         }
         .form-input {
             flex-grow: 1;
-            padding: 0.75rem;
+            padding: 0 0.75rem;
             font-size: 1rem;
+            height: var(--input-height);
             border: 1px solid #ced4da;
-            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            border-radius: var(--border-radius);
             -webkit-appearance: none;
         }
         .btn {
-            padding: 0.75rem 1.25rem;
+            padding: 0 1.25rem;
+            height: var(--input-height);
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 600;
             border: none;
             border-radius: var(--border-radius);
             cursor: pointer;
@@ -77,37 +76,34 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            flex-shrink: 0;
         }
-        .btn:active {
-            transform: scale(0.98);
-        }
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-        .btn-secondary {
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-icon {
+            padding: 0;
+            width: var(--input-height);
             background-color: var(--secondary-color);
             color: white;
-            border-radius: 0 var(--border-radius) var(--border-radius) 0;
         }
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
+        .display-box {
+            background-color: var(--light-color);
+            border: 1px solid #dee2e6;
+            border-radius: var(--border-radius);
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            min-height: 1.5rem;
         }
-        .btn-full {
-            width: 100%;
-            padding: 1rem;
-            font-size: 1.2rem;
-        }
-        /* --- 스캔 목록 --- */
         #scanned-list {
             list-style: none;
             padding: 0;
-            margin: 0;
-            max-height: 200px;
+            margin: 1rem 0;
+            max-height: 150px;
             overflow-y: auto;
             border: 1px solid #dee2e6;
             border-radius: var(--border-radius);
@@ -119,75 +115,24 @@
             padding: 0.75rem 1rem;
             border-bottom: 1px solid #e9ecef;
         }
-        #scanned-list li:last-child {
-            border-bottom: none;
-        }
-        .list-item-text {
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-        }
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--danger-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0 0.5rem;
-        }
-        .list-actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 1rem;
-        }
-        /* --- QR 스캐너 모달 --- */
+        #scanned-list li:last-child { border-bottom: none; }
+        .list-actions { display: flex; gap: 0.5rem; }
         #scanner-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); z-index: 1000;
         }
-        #scanner-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        #scanner-video { width: 100%; height: 100%; object-fit: cover; }
         #close-scanner {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 2rem;
-            color: white;
-            background: rgba(0,0,0,0.5);
-            border: none;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            line-height: 44px;
-            text-align: center;
+            position: absolute; top: 20px; right: 20px; font-size: 2rem; color: white;
+            background: rgba(0,0,0,0.5); border: none; border-radius: 50%; width: 44px; height: 44px;
             cursor: pointer;
         }
-        /* --- 토스트 메시지 --- */
         .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            border-radius: var(--border-radius);
-            color: white;
-            font-weight: bold;
-            z-index: 1001;
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 10px 20px; border-radius: var(--border-radius); color: white; font-weight: bold;
+            z-index: 1001; opacity: 0; transition: opacity 0.3s, bottom 0.3s;
         }
-        .toast.show {
-            opacity: 1;
-            bottom: 30px;
-        }
+        .toast.show { opacity: 1; bottom: 30px; }
         .toast.success { background-color: var(--success-color); }
         .toast.error { background-color: var(--danger-color); }
         .toast.info { background-color: var(--secondary-color); }
@@ -196,43 +141,50 @@
 <body>
 
     <div class="container">
-        <header>
-            <h1>JTECH 재고 관리 📱</h1>
-        </header>
+        <header><h1>JTECH 재고 관리</h1></header>
 
         <div class="section">
-            <button id="start-scan-btn" class="btn btn-primary btn-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10"/></svg>
-                QR 스캔 시작
-            </button>
+            <h2 class="section-title">스캔 & 조회</h2>
+            <div class="input-group">
+                <input type="text" id="main-input" class="form-input" placeholder="Box ID 입력 또는 스캔">
+                <button id="main-scan-btn" class="btn btn-icon" aria-label="QR 스캔">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+                </button>
+            </div>
+            <div class="list-actions" style="margin-top: 0.5rem;">
+                <button id="lookup-btn" class="btn btn-primary" style="flex-grow: 1;">위치 조회</button>
+                <button id="add-to-list-btn" class="btn btn-success" style="flex-grow: 1;">목록에 추가</button>
+            </div>
         </div>
         
         <div class="section">
-            <h2 class="section-title">Box ID 조회</h2>
-            <div class="input-group">
-                <input type="text" id="boxid-lookup-input" class="form-input" placeholder="Box ID를 입력 또는 스캔하세요">
-                <button id="lookup-btn" class="btn btn-secondary">위치 조회</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2 id="scanned-list-title" class="section-title">스캔 목록 (0개)</h2>
-            <ul id="scanned-list">
-                </ul>
-            <div class="list-actions">
+            <h2 class="section-title" id="scanned-list-title">스캔 목록 (0개)</h2>
+            <ul id="scanned-list"><li>목록이 비었습니다.</li></ul>
+            <div class="list-actions" style="justify-content: flex-end;">
                 <button id="clear-all-btn" class="btn btn-danger">전체 삭제</button>
             </div>
         </div>
 
         <div class="section">
-            <h2 class="section-title">위치 지정/이동</h2>
+            <h2 class="section-title">위치 이동</h2>
+            <div class="display-box" id="move-display">이동할 Box ID 또는 범위 시작점</div>
             <div class="input-group">
-                <input type="text" id="location-input" class="form-input" placeholder="이동할 위치 입력" list="locations-datalist">
+                <input type="text" id="move-start-input" class="form-input" placeholder="BoxID 또는 시작 시리얼">
+                <button id="move-scan-btn" class="btn btn-icon" aria-label="QR 스캔">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+                </button>
+            </div>
+            <div class="input-group" style="margin-top: 0.5rem;">
+                <input type="number" id="move-end-input" class="form-input" placeholder="범위 이동 시, 끝 시리얼">
+            </div>
+             <div class="input-group" style="margin-top: 1rem;">
+                <input type="text" id="location-input" class="form-input" placeholder="이동할 위치" list="locations-datalist">
                 <datalist id="locations-datalist"></datalist>
             </div>
-            <button id="assign-location-btn" class="btn btn-success btn-full">
-                <span id="assign-btn-count">0</span>개 품목 위치 지정
-            </button>
+            <div class="list-actions" style="margin-top: 1rem;">
+                 <button id="move-btn" class="btn btn-success" style="flex-grow: 1;">이동 실행</button>
+                 <button id="bulk-move-btn" class="btn btn-primary" style="flex-grow: 1;">목록 전체 이동</button>
+            </div>
         </div>
 
     </div>
@@ -243,235 +195,222 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- 전역 변수 및 상태 ---
-            const API_BASE_URL = window.location.origin;
-            let scannedItems = [];
-            let videoStream;
+    document.addEventListener('DOMContentLoaded', () => {
+        const API_BASE_URL = window.location.origin;
+        let scannedItems = [];
+        let videoStream;
+        let activeInput = null;
 
-            // --- DOM 요소 캐싱 ---
-            const elements = {
-                startScanBtn: document.getElementById('start-scan-btn'),
-                scannerContainer: document.getElementById('scanner-container'),
-                scannerVideo: document.getElementById('scanner-video'),
-                closeScannerBtn: document.getElementById('close-scanner'),
-                boxIdLookupInput: document.getElementById('boxid-lookup-input'),
-                lookupBtn: document.getElementById('lookup-btn'),
-                scannedListTitle: document.getElementById('scanned-list-title'),
-                scannedList: document.getElementById('scanned-list'),
-                clearAllBtn: document.getElementById('clear-all-btn'),
-                locationInput: document.getElementById('location-input'),
-                locationsDatalist: document.getElementById('locations-datalist'),
-                assignLocationBtn: document.getElementById('assign-location-btn'),
-                assignBtnCount: document.getElementById('assign-btn-count'),
-            };
+        const elements = {
+            mainInput: document.getElementById('main-input'),
+            mainScanBtn: document.getElementById('main-scan-btn'),
+            lookupBtn: document.getElementById('lookup-btn'),
+            addToListBtn: document.getElementById('add-to-list-btn'),
+            scannedListTitle: document.getElementById('scanned-list-title'),
+            scannedList: document.getElementById('scanned-list'),
+            clearAllBtn: document.getElementById('clear-all-btn'),
+            moveDisplay: document.getElementById('move-display'),
+            moveStartInput: document.getElementById('move-start-input'),
+            moveScanBtn: document.getElementById('move-scan-btn'),
+            moveEndInput: document.getElementById('move-end-input'),
+            locationInput: document.getElementById('location-input'),
+            locationsDatalist: document.getElementById('locations-datalist'),
+            moveBtn: document.getElementById('move-btn'),
+            bulkMoveBtn: document.getElementById('bulk-move-btn'),
+            scannerContainer: document.getElementById('scanner-container'),
+            scannerVideo: document.getElementById('scanner-video'),
+            closeScannerBtn: document.getElementById('close-scanner'),
+        };
 
-            // --- UI 렌더링 함수 ---
-            function renderScannedList() {
-                elements.scannedList.innerHTML = '';
-                if (scannedItems.length === 0) {
-                    elements.scannedList.innerHTML = `<li>스캔된 품목이 없습니다.</li>`;
+        function renderScannedList() {
+            elements.scannedList.innerHTML = '';
+            if (scannedItems.length === 0) {
+                elements.scannedList.innerHTML = `<li>목록이 비었습니다.</li>`;
+            } else {
+                scannedItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="list-item-text">${item}</span>
+                        <button class="btn btn-danger" style="height: 2rem; padding: 0 0.5rem;" data-boxid="${item}">삭제</button>
+                    `;
+                    elements.scannedList.appendChild(li);
+                });
+            }
+            elements.scannedListTitle.textContent = `스캔 목록 (${scannedItems.length}개)`;
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || `서버 오류: ${response.status}`);
+                }
+                return data;
+            } catch (error) {
+                showToast(error.message, 'error');
+                throw error;
+            }
+        }
+        
+        function fetchLocations() {
+            apiCall('/api/locations').then(data => {
+                elements.locationsDatalist.innerHTML = data.locations.map(loc => `<option value="${loc}"></option>`).join('');
+            }).catch(err => console.error("위치 목록 로딩 실패:", err));
+        }
+
+        function startScanner(targetInput) {
+            activeInput = targetInput;
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    videoStream = stream;
+                    elements.scannerVideo.srcObject = stream;
+                    elements.scannerContainer.style.display = 'block';
+                    requestAnimationFrame(tick);
+                }).catch(() => showToast('카메라를 사용할 수 없습니다.', 'error'));
+        }
+
+        function stopScanner() {
+            if (videoStream) videoStream.getTracks().forEach(track => track.stop());
+            elements.scannerContainer.style.display = 'none';
+        }
+
+        function tick() {
+            if (elements.scannerVideo.readyState === elements.scannerVideo.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                canvas.width = elements.scannerVideo.videoWidth;
+                canvas.height = elements.scannerVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
+                const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+
+                if (code) {
+                    stopScanner();
+                    if ('vibrate' in navigator) navigator.vibrate(100);
+                    activeInput.value = code.data;
+                    if(activeInput === elements.moveStartInput) {
+                        elements.moveDisplay.textContent = code.data;
+                    }
                 } else {
-                    scannedItems.forEach(item => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `
-                            <span class="list-item-text">${item}</span>
-                            <button class="delete-btn" data-boxid="${item}">&times;</button>
-                        `;
-                        elements.scannedList.appendChild(li);
-                    });
+                    requestAnimationFrame(tick);
                 }
-                const count = scannedItems.length;
-                elements.scannedListTitle.textContent = `스캔 목록 (${count}개)`;
-                elements.assignBtnCount.textContent = count;
-                elements.assignLocationBtn.disabled = count === 0;
-            }
-
-            // --- API 호출 함수 ---
-            async function fetchLocations() {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/locations`);
-                    if (!response.ok) throw new Error('서버 통신 실패');
-                    const data = await response.json();
-                    elements.locationsDatalist.innerHTML = '';
-                    data.locations.forEach(loc => {
-                        const option = document.createElement('option');
-                        option.value = loc;
-                        elements.locationsDatalist.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('위치 목록 로딩 실패:', error);
-                    showToast('위치 목록 로딩 실패', 'error');
-                }
-            }
-
-            async function lookupBoxId(boxid) {
-                if (!boxid) {
-                    showToast('Box ID를 입력하세요.', 'info');
-                    return;
-                }
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/box/by-id?boxid=${encodeURIComponent(boxid)}`);
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.detail || '조회 실패');
-                    }
-                    const location = data.Location || '지정되지 않음';
-                    showToast(`${data.BoxID}의 위치: ${location}`, 'info');
-                } catch (error) {
-                    showToast(error.message, 'error');
-                }
-            }
-
-            async function assignBulkLocation() {
-                const toLoc = elements.locationInput.value.trim().toUpperCase();
-                if (!toLoc) {
-                    showToast('이동할 위치를 입력하세요.', 'error');
-                    return;
-                }
-                if (scannedItems.length === 0) {
-                    showToast('스캔된 품목이 없습니다.', 'error');
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/move/bulk`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            boxids: scannedItems,
-                            to_loc: toLoc
-                        }),
-                    });
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.detail || '이동 실패');
-                    }
-                    showToast(`${data.moved}개 품목을 ${toLoc}로 이동 완료`, 'success');
-                    scannedItems = [];
-                    elements.locationInput.value = '';
-                    renderScannedList();
-                } catch (error) {
-                     showToast(error.message, 'error');
-                }
-            }
-
-            // --- 스캐너 관련 함수 ---
-            function startScanner() {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(stream => {
-                        videoStream = stream;
-                        elements.scannerVideo.srcObject = stream;
-                        elements.scannerContainer.style.display = 'block';
-                        requestAnimationFrame(tick);
-                    }).catch(err => {
-                        console.error("카메라 접근 실패:", err);
-                        showToast('카메라를 사용할 수 없습니다.', 'error');
-                    });
-            }
-            
-            function stopScanner() {
-                if (videoStream) {
-                    videoStream.getTracks().forEach(track => track.stop());
-                }
-                elements.scannerContainer.style.display = 'none';
-            }
-
-            function tick() {
-                if (elements.scannerVideo.readyState === elements.scannerVideo.HAVE_ENOUGH_DATA) {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = elements.scannerVideo.videoWidth;
-                    canvas.height = elements.scannerVideo.videoHeight;
-                    ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
-                    });
-
-                    if (code) {
-                        stopScanner();
-                        handleScannedCode(code.data);
-                        return; // 스캔 성공 시 루프 중단
-                    }
-                }
+            } else {
                 requestAnimationFrame(tick);
             }
+        }
 
-            function handleScannedCode(code) {
-                // 진동으로 피드백
-                if ('vibrate' in navigator) navigator.vibrate(100);
-                
-                // 포커스가 Box ID 조회 인풋에 있다면 거기에 값을 넣음
-                if (document.activeElement === elements.boxIdLookupInput) {
-                    elements.boxIdLookupInput.value = code;
-                    lookupBoxId(code);
-                } else { // 아니면 스캔 목록에 추가
-                    if (!scannedItems.includes(code)) {
-                        scannedItems.unshift(code); // 최근 스캔 항목을 위로
-                        renderScannedList();
-                        showToast(`[${code}] 추가됨`, 'success');
-                    } else {
-                        showToast(`[${code}] 이미 목록에 있습니다.`, 'info');
-                    }
-                }
-            }
-            
-            // --- 이벤트 리스너 설정 ---
-            elements.startScanBtn.addEventListener('click', startScanner);
-            elements.closeScannerBtn.addEventListener('click', stopScanner);
-            elements.lookupBtn.addEventListener('click', () => lookupBoxId(elements.boxIdLookupInput.value.trim()));
-            elements.assignLocationBtn.addEventListener('click', assignBulkLocation);
+        elements.mainScanBtn.addEventListener('click', () => startScanner(elements.mainInput));
+        elements.moveScanBtn.addEventListener('click', () => startScanner(elements.moveStartInput));
+        elements.closeScannerBtn.addEventListener('click', stopScanner);
 
-            elements.scannedList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const boxidToDelete = e.target.dataset.boxid;
-                    scannedItems = scannedItems.filter(item => item !== boxidToDelete);
-                    renderScannedList();
-                    showToast(`${boxidToDelete} 삭제됨`, 'info');
-                }
-            });
-
-            elements.clearAllBtn.addEventListener('click', () => {
-                if (scannedItems.length > 0) {
-                    if (confirm('정말로 스캔 목록 전체를 삭제하시겠습니까?')) {
-                        scannedItems = [];
-                        renderScannedList();
-                        showToast('목록이 초기화되었습니다.', 'info');
-                    }
-                }
-            });
-
-            // --- 유틸리티 함수 ---
-            let toastTimer;
-            function showToast(message, type = 'info') {
-                const existingToast = document.querySelector('.toast');
-                if (existingToast) existingToast.remove();
-
-                const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                toast.textContent = message;
-                document.body.appendChild(toast);
-
-                // Animate in
-                setTimeout(() => toast.classList.add('show'), 10);
-
-                // Clear previous timer
-                clearTimeout(toastTimer);
-
-                // Animate out and remove
-                toastTimer = setTimeout(() => {
-                    toast.classList.remove('show');
-                    toast.addEventListener('transitionend', () => toast.remove());
-                }, 3000);
-            }
-            
-            // --- 초기화 ---
-            renderScannedList();
-            fetchLocations();
+        elements.lookupBtn.addEventListener('click', async () => {
+            const boxid = elements.mainInput.value.trim();
+            if (!boxid) return showToast('Box ID를 입력하세요.', 'info');
+            const data = await apiCall(`/api/box/by-id?boxid=${encodeURIComponent(boxid)}`).catch(() => {});
+            if (data) showToast(`${data.BoxID} 위치: ${data.Location || '없음'}`, 'info');
         });
+
+        elements.addToListBtn.addEventListener('click', () => {
+            const boxid = elements.mainInput.value.trim();
+            if (!boxid) return showToast('Box ID를 입력하세요.', 'info');
+            if (!scannedItems.includes(boxid)) {
+                scannedItems.unshift(boxid);
+                renderScannedList();
+                showToast(`${boxid} 추가됨`, 'success');
+                elements.mainInput.value = '';
+            } else {
+                showToast('이미 목록에 있습니다.', 'info');
+            }
+        });
+
+        elements.scannedList.addEventListener('click', (e) => {
+            if (e.target.dataset.boxid) {
+                const boxid = e.target.dataset.boxid;
+                scannedItems = scannedItems.filter(item => item !== boxid);
+                renderScannedList();
+                showToast(`${boxid} 삭제됨`, 'info');
+            }
+        });
+        
+        elements.clearAllBtn.addEventListener('click', () => {
+            if (scannedItems.length > 0 && confirm('목록 전체를 삭제하시겠습니까?')) {
+                scannedItems = [];
+                renderScannedList();
+                showToast('목록이 초기화되었습니다.', 'info');
+            }
+        });
+
+        elements.moveStartInput.addEventListener('input', (e) => {
+            elements.moveDisplay.textContent = e.target.value || '이동할 Box ID 또는 범위 시작점';
+        });
+
+        async function executeMove(body) {
+            const endpoint = body.boxids ? '/api/move/bulk' : '/api/move/by-range';
+            const options = {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            };
+            const data = await apiCall(endpoint, options).catch(() => {});
+            if(data) {
+                const movedCount = data.moved || (data.range ? `${data.range[0]}-${data.range[1]}` : 0);
+                showToast(`${movedCount} 이동 완료 → ${body.to_loc}`, 'success');
+                // 성공 시 입력 필드 초기화
+                elements.moveStartInput.value = '';
+                elements.moveEndInput.value = '';
+                elements.moveDisplay.textContent = '이동할 Box ID 또는 범위 시작점';
+                if(endpoint === '/api/move/bulk') {
+                    scannedItems = [];
+                    renderScannedList();
+                }
+            }
+        }
+
+        elements.moveBtn.addEventListener('click', () => {
+            const start = elements.moveStartInput.value.trim();
+            const end = elements.moveEndInput.value.trim();
+            const to_loc = elements.locationInput.value.trim().toUpperCase();
+
+            if (!start || !to_loc) return showToast('BoxID(또는 시작)와 이동할 위치를 입력하세요.', 'error');
+            
+            let body;
+            if (end) { // 범위 이동
+                body = { boxid: start, start: parseInt(start.slice(-4)), end: parseInt(end), to_loc };
+            } else { // 단일 이동
+                body = { boxids: [start], to_loc };
+            }
+            executeMove(body);
+        });
+
+        elements.bulkMoveBtn.addEventListener('click', () => {
+            const to_loc = elements.locationInput.value.trim().toUpperCase();
+            if (scannedItems.length === 0) return showToast('스캔 목록이 비었습니다.', 'info');
+            if (!to_loc) return showToast('이동할 위치를 입력하세요.', 'error');
+            
+            const body = { boxids: scannedItems, to_loc };
+            executeMove(body);
+        });
+
+        let toastTimer;
+        function showToast(message, type = 'info') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        renderScannedList();
+        fetchLocations();
+    });
     </script>
 </body>
 </html>
