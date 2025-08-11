@@ -1,393 +1,477 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JTECH 모바일 위치 (개선버전)</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin:12px; }
-    .row { display:flex; gap:8px; align-items:center; margin:8px 0; flex-wrap:wrap; }
-    input, select, button { font-size:16px; padding:8px; }
-    .box { border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:10px; }
-    .list { max-height:300px; overflow:auto; border:1px solid #eee; padding:6px; }
-    .muted { color:#777; font-size:12px; }
-    
-    /* QR 스캐너 스타일 개선 */
-    #qr-reader {
-      width: 100%;
-      max-width: 300px;
-      border: 2px solid #4CAF50;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    
-    .status-msg {
-      background: #e3f2fd;
-      padding: 8px;
-      border-radius: 4px;
-      margin: 8px 0;
-      font-size: 14px;
-    }
-    
-    .error-msg {
-      background: #ffebee;
-      color: #c62828;
-      padding: 8px;
-      border-radius: 4px;
-      margin: 8px 0;
-      font-size: 14px;
-    }
-    
-    .success-msg {
-      background: #e8f5e8;
-      color: #2e7d32;
-      padding: 8px;
-      border-radius: 4px;
-      margin: 8px 0;
-      font-size: 14px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>JTECH 재고 관리</title>
+    <style>
+        /* --- 기본 & 레이아웃 --- */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            overscroll-behavior-y: contain; /* iOS 당겨서 새로고침 방지 */
+        }
+        .container {
+            padding: 1.5rem 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 1rem;
+        }
+        h1 {
+            color: var(--primary-color);
+            margin: 0;
+        }
+        /* --- 섹션별 스타일 --- */
+        .section {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+        /* --- UI 요소들 --- */
+        .input-group {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+        .form-input {
+            flex-grow: 1;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            -webkit-appearance: none;
+        }
+        .btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        }
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .btn-full {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+        }
+        /* --- 스캔 목록 --- */
+        #scanned-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: var(--border-radius);
+        }
+        #scanned-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        #scanned-list li:last-child {
+            border-bottom: none;
+        }
+        .list-item-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 0.5rem;
+        }
+        .list-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+        /* --- QR 스캐너 모달 --- */
+        #scanner-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+        #scanner-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #close-scanner {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            line-height: 44px;
+            text-align: center;
+            cursor: pointer;
+        }
+        /* --- 토스트 메시지 --- */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: bold;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        .toast.show {
+            opacity: 1;
+            bottom: 30px;
+        }
+        .toast.success { background-color: var(--success-color); }
+        .toast.error { background-color: var(--danger-color); }
+        .toast.info { background-color: var(--secondary-color); }
+    </style>
 </head>
 <body>
-  <h2>모바일 위치 작업 (개선버전)</h2>
 
-  <div class="box">
-    <h3>📱 QR 스캐너</h3>
-    
-    <!-- 상태 메시지 -->
-    <div id="status-msg" class="status-msg">카메라를 시작하려면 [스캔 시작] 버튼을 누르세요</div>
-    
-    <!-- QR 리더 영역 -->
-    <div id="qr-reader" style="display: none;"></div>
-    
-    <div class="row">
-      <input id="boxid" placeholder="BoxID 직접 입력 또는 스캔" style="min-width:260px" />
-    </div>
-    
-    <div class="row">
-      <button id="btn-scan">📹 스캔 시작</button>
-      <button id="btn-stop" disabled>⏹️ 스캔 정지</button>
-      <button id="btn-load">📋 작업건 불러오기</button>
-    </div>
-    
-    <!-- 대안 방법들 -->
-    <div class="row" style="margin-top: 15px;">
-      <button id="btn-file-scan">📁 파일에서 QR 읽기</button>
-      <input type="file" id="file-input" accept="image/*" style="display: none;" />
-    </div>
-    
-    <div class="muted">
-      • 스캔 성공 시 BoxID 입력칸에 자동 채움<br>
-      • 카메라가 안되면 "파일에서 QR 읽기" 사용<br>
-      • iOS: 사용자 터치 후에만 카메라 작동
-    </div>
-  </div>
+    <div class="container">
+        <header>
+            <h1>JTECH 재고 관리 📱</h1>
+        </header>
 
-  <div class="box">
-    <div class="row">
-      <label>범위 선택(끝 4자리):</label>
-      <input id="r-start" placeholder="0001" size="6" />
-      <span>~</span>
-      <input id="r-end" placeholder="0030" size="6" />
-      <button id="btn-range">범위 담기</button>
-      <span class="muted">or 개별 선택(아래 체크)</span>
+        <div class="section">
+            <button id="start-scan-btn" class="btn btn-primary btn-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10"/></svg>
+                QR 스캔 시작
+            </button>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Box ID 조회</h2>
+            <div class="input-group">
+                <input type="text" id="boxid-lookup-input" class="form-input" placeholder="Box ID를 입력 또는 스캔하세요">
+                <button id="lookup-btn" class="btn btn-secondary">위치 조회</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 id="scanned-list-title" class="section-title">스캔 목록 (0개)</h2>
+            <ul id="scanned-list">
+                </ul>
+            <div class="list-actions">
+                <button id="clear-all-btn" class="btn btn-danger">전체 삭제</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">위치 지정/이동</h2>
+            <div class="input-group">
+                <input type="text" id="location-input" class="form-input" placeholder="이동할 위치 입력" list="locations-datalist">
+                <datalist id="locations-datalist"></datalist>
+            </div>
+            <button id="assign-location-btn" class="btn btn-success btn-full">
+                <span id="assign-btn-count">0</span>개 품목 위치 지정
+            </button>
+        </div>
+
     </div>
-    <div class="row">
-      <label>도착 Location:</label>
-      <input list="locs" id="to-loc" placeholder="예: MT01-A-01-01-01" style="min-width:260px" />
-      <datalist id="locs"></datalist>
-      <input id="operator" placeholder="작업자코드(PIN)" size="10" />
-      <button id="btn-save-range">범위 저장</button>
-      <button id="btn-save-selected">선택 저장</button>
+
+    <div id="scanner-container">
+        <video id="scanner-video" playsinline></video>
+        <button id="close-scanner">&times;</button>
     </div>
-  </div>
 
-  <div class="box">
-    <div>가져온 박스 (<span id="cnt">0</span>건)</div>
-    <div class="list" id="pool"></div>
-  </div>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
-  <!-- QR 스캐너 라이브러리 -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-  
-  <script>
-    const poolDiv = document.getElementById('pool');
-    const cntSpan = document.getElementById('cnt');
-    const locData = document.getElementById('locs');
-    const statusMsg = document.getElementById('status-msg');
-    const qrReader = document.getElementById('qr-reader');
-    const btnScan = document.getElementById('btn-scan');
-    const btnStop = document.getElementById('btn-stop');
-    
-    let html5QrCode = null;
-    let isScanning = false;
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 전역 변수 및 상태 ---
+            const API_BASE_URL = window.location.origin;
+            let scannedItems = [];
+            let videoStream;
 
-    // 상태 메시지 업데이트
-    function updateStatus(message, type = 'info') {
-      statusMsg.textContent = message;
-      statusMsg.className = type === 'error' ? 'error-msg' : 
-                           type === 'success' ? 'success-msg' : 'status-msg';
-    }
+            // --- DOM 요소 캐싱 ---
+            const elements = {
+                startScanBtn: document.getElementById('start-scan-btn'),
+                scannerContainer: document.getElementById('scanner-container'),
+                scannerVideo: document.getElementById('scanner-video'),
+                closeScannerBtn: document.getElementById('close-scanner'),
+                boxIdLookupInput: document.getElementById('boxid-lookup-input'),
+                lookupBtn: document.getElementById('lookup-btn'),
+                scannedListTitle: document.getElementById('scanned-list-title'),
+                scannedList: document.getElementById('scanned-list'),
+                clearAllBtn: document.getElementById('clear-all-btn'),
+                locationInput: document.getElementById('location-input'),
+                locationsDatalist: document.getElementById('locations-datalist'),
+                assignLocationBtn: document.getElementById('assign-location-btn'),
+                assignBtnCount: document.getElementById('assign-btn-count'),
+            };
 
-    // 기존 코드들...
-    async function loadLocations() {
-      try {
-        const res = await fetch('/api/locations');
-        const data = await res.json();
-        locData.innerHTML = '';
-        (data.locations || []).forEach(l => {
-          const o = document.createElement('option'); o.value = l; locData.appendChild(o);
+            // --- UI 렌더링 함수 ---
+            function renderScannedList() {
+                elements.scannedList.innerHTML = '';
+                if (scannedItems.length === 0) {
+                    elements.scannedList.innerHTML = `<li>스캔된 품목이 없습니다.</li>`;
+                } else {
+                    scannedItems.forEach(item => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span class="list-item-text">${item}</span>
+                            <button class="delete-btn" data-boxid="${item}">&times;</button>
+                        `;
+                        elements.scannedList.appendChild(li);
+                    });
+                }
+                const count = scannedItems.length;
+                elements.scannedListTitle.textContent = `스캔 목록 (${count}개)`;
+                elements.assignBtnCount.textContent = count;
+                elements.assignLocationBtn.disabled = count === 0;
+            }
+
+            // --- API 호출 함수 ---
+            async function fetchLocations() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/locations`);
+                    if (!response.ok) throw new Error('서버 통신 실패');
+                    const data = await response.json();
+                    elements.locationsDatalist.innerHTML = '';
+                    data.locations.forEach(loc => {
+                        const option = document.createElement('option');
+                        option.value = loc;
+                        elements.locationsDatalist.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('위치 목록 로딩 실패:', error);
+                    showToast('위치 목록 로딩 실패', 'error');
+                }
+            }
+
+            async function lookupBoxId(boxid) {
+                if (!boxid) {
+                    showToast('Box ID를 입력하세요.', 'info');
+                    return;
+                }
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/box/by-id?boxid=${encodeURIComponent(boxid)}`);
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.detail || '조회 실패');
+                    }
+                    const location = data.Location || '지정되지 않음';
+                    showToast(`${data.BoxID}의 위치: ${location}`, 'info');
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            }
+
+            async function assignBulkLocation() {
+                const toLoc = elements.locationInput.value.trim().toUpperCase();
+                if (!toLoc) {
+                    showToast('이동할 위치를 입력하세요.', 'error');
+                    return;
+                }
+                if (scannedItems.length === 0) {
+                    showToast('스캔된 품목이 없습니다.', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/move/bulk`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            boxids: scannedItems,
+                            to_loc: toLoc
+                        }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.detail || '이동 실패');
+                    }
+                    showToast(`${data.moved}개 품목을 ${toLoc}로 이동 완료`, 'success');
+                    scannedItems = [];
+                    elements.locationInput.value = '';
+                    renderScannedList();
+                } catch (error) {
+                     showToast(error.message, 'error');
+                }
+            }
+
+            // --- 스캐너 관련 함수 ---
+            function startScanner() {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => {
+                        videoStream = stream;
+                        elements.scannerVideo.srcObject = stream;
+                        elements.scannerContainer.style.display = 'block';
+                        requestAnimationFrame(tick);
+                    }).catch(err => {
+                        console.error("카메라 접근 실패:", err);
+                        showToast('카메라를 사용할 수 없습니다.', 'error');
+                    });
+            }
+            
+            function stopScanner() {
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+                elements.scannerContainer.style.display = 'none';
+            }
+
+            function tick() {
+                if (elements.scannerVideo.readyState === elements.scannerVideo.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = elements.scannerVideo.videoWidth;
+                    canvas.height = elements.scannerVideo.videoHeight;
+                    ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code) {
+                        stopScanner();
+                        handleScannedCode(code.data);
+                        return; // 스캔 성공 시 루프 중단
+                    }
+                }
+                requestAnimationFrame(tick);
+            }
+
+            function handleScannedCode(code) {
+                // 진동으로 피드백
+                if ('vibrate' in navigator) navigator.vibrate(100);
+                
+                // 포커스가 Box ID 조회 인풋에 있다면 거기에 값을 넣음
+                if (document.activeElement === elements.boxIdLookupInput) {
+                    elements.boxIdLookupInput.value = code;
+                    lookupBoxId(code);
+                } else { // 아니면 스캔 목록에 추가
+                    if (!scannedItems.includes(code)) {
+                        scannedItems.unshift(code); // 최근 스캔 항목을 위로
+                        renderScannedList();
+                        showToast(`[${code}] 추가됨`, 'success');
+                    } else {
+                        showToast(`[${code}] 이미 목록에 있습니다.`, 'info');
+                    }
+                }
+            }
+            
+            // --- 이벤트 리스너 설정 ---
+            elements.startScanBtn.addEventListener('click', startScanner);
+            elements.closeScannerBtn.addEventListener('click', stopScanner);
+            elements.lookupBtn.addEventListener('click', () => lookupBoxId(elements.boxIdLookupInput.value.trim()));
+            elements.assignLocationBtn.addEventListener('click', assignBulkLocation);
+
+            elements.scannedList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const boxidToDelete = e.target.dataset.boxid;
+                    scannedItems = scannedItems.filter(item => item !== boxidToDelete);
+                    renderScannedList();
+                    showToast(`${boxidToDelete} 삭제됨`, 'info');
+                }
+            });
+
+            elements.clearAllBtn.addEventListener('click', () => {
+                if (scannedItems.length > 0) {
+                    if (confirm('정말로 스캔 목록 전체를 삭제하시겠습니까?')) {
+                        scannedItems = [];
+                        renderScannedList();
+                        showToast('목록이 초기화되었습니다.', 'info');
+                    }
+                }
+            });
+
+            // --- 유틸리티 함수 ---
+            let toastTimer;
+            function showToast(message, type = 'info') {
+                const existingToast = document.querySelector('.toast');
+                if (existingToast) existingToast.remove();
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                // Animate in
+                setTimeout(() => toast.classList.add('show'), 10);
+
+                // Clear previous timer
+                clearTimeout(toastTimer);
+
+                // Animate out and remove
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                    toast.addEventListener('transitionend', () => toast.remove());
+                }, 3000);
+            }
+            
+            // --- 초기화 ---
+            renderScannedList();
+            fetchLocations();
         });
-      } catch(e) { 
-        console.warn('locations load fail', e); 
-        // 테스트용 더미 데이터
-        ['MT01-A-01-01-01', 'MT01-A-01-01-02', 'MT01-B-01-01-01'].forEach(l => {
-          const o = document.createElement('option'); o.value = l; locData.appendChild(o);
-        });
-      }
-    }
-    loadLocations();
-
-    function renderPool(list) {
-      cntSpan.textContent = list.length;
-      poolDiv.innerHTML = list.map(b => `
-        <label style="display:block;margin:4px 0;">
-          <input type="checkbox" class="sel" value="${b.BoxID}" />
-          ${b.BoxID}  <span class="muted">${b.Location ?? ''}</span>
-        </label>
-      `).join('');
-    }
-
-    // QR 스캔 결과 처리
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log('QR 스캔 성공:', decodedText);
-      
-      // BoxID 입력칸에 설정
-      document.getElementById('boxid').value = decodedText.trim();
-      
-      // 스캔 중지
-      stopScan();
-      
-      // 성공 메시지
-      updateStatus(`✅ QR 스캔 성공: ${decodedText}`, 'success');
-      
-      // 3초 후 자동으로 작업건 불러오기 (선택사항)
-      setTimeout(() => {
-        if (confirm('스캔한 BoxID로 작업건을 불러올까요?')) {
-          document.getElementById('btn-load').click();
-        }
-      }, 1000);
-    }
-
-    function onScanFailure(error) {
-      // 스캔 실패는 로그만 (너무 많이 발생)
-      // console.warn('스캔 실패:', error);
-    }
-
-    // QR 스캐너 시작
-    async function startScan() {
-      if (isScanning) return;
-      
-      try {
-        updateStatus('📱 카메라 권한을 요청하고 있습니다...', 'info');
-        
-        // 기존 스캐너 정리
-        if (html5QrCode) {
-          await html5QrCode.stop();
-          html5QrCode.clear();
-        }
-        
-        // 새로운 스캐너 생성
-        html5QrCode = new Html5Qrcode("qr-reader");
-        
-        // 카메라 시작
-        await html5QrCode.start(
-          { facingMode: "environment" }, // 후면 카메라
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
-          onScanSuccess,
-          onScanFailure
-        );
-        
-        // UI 업데이트
-        isScanning = true;
-        qrReader.style.display = 'block';
-        btnScan.disabled = true;
-        btnStop.disabled = false;
-        updateStatus('📷 QR코드를 카메라에 맞춰주세요', 'info');
-        
-      } catch (err) {
-        console.error('카메라 시작 오류:', err);
-        
-        let errorMsg = '카메라를 시작할 수 없습니다. ';
-        
-        if (err.name === 'NotAllowedError') {
-          errorMsg += '카메라 권한을 허용해주세요.';
-        } else if (err.name === 'NotFoundError') {
-          errorMsg += '카메라를 찾을 수 없습니다.';
-        } else if (err.name === 'NotSupportedError') {
-          errorMsg += '이 브라우저에서는 카메라를 지원하지 않습니다.';
-        } else if (err.name === 'NotReadableError') {
-          errorMsg += '카메라가 다른 앱에서 사용 중입니다.';
-        } else if (err.name === 'OverconstrainedError') {
-          errorMsg += '카메라 설정에 문제가 있습니다.';
-        } else {
-          errorMsg += `오류: ${err.message}`;
-        }
-        
-        updateStatus(errorMsg, 'error');
-        
-        // 대안 제안
-        setTimeout(() => {
-          updateStatus(errorMsg + ' → "파일에서 QR 읽기"를 사용해보세요.', 'error');
-        }, 2000);
-      }
-    }
-
-    // QR 스캐너 중지
-    async function stopScan() {
-      if (!isScanning) return;
-      
-      try {
-        if (html5QrCode) {
-          await html5QrCode.stop();
-          html5QrCode.clear();
-          html5QrCode = null;
-        }
-        
-        // UI 업데이트
-        isScanning = false;
-        qrReader.style.display = 'none';
-        btnScan.disabled = false;
-        btnStop.disabled = true;
-        updateStatus('⏹️ 스캔이 중지되었습니다', 'info');
-        
-      } catch (err) {
-        console.error('스캔 중지 오류:', err);
-        updateStatus('스캔 중지 중 오류가 발생했습니다', 'error');
-      }
-    }
-
-    // 파일에서 QR 읽기 (대안 방법)
-    async function scanFromFile(file) {
-      try {
-        updateStatus('📁 파일에서 QR코드를 읽고 있습니다...', 'info');
-        
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("qr-reader");
-        }
-        
-        const result = await html5QrCode.scanFile(file, true);
-        
-        // 성공 처리
-        document.getElementById('boxid').value = result.trim();
-        updateStatus(`✅ 파일 스캔 성공: ${result}`, 'success');
-        
-      } catch (err) {
-        console.error('파일 스캔 오류:', err);
-        updateStatus('파일에서 QR코드를 찾을 수 없습니다', 'error');
-      }
-    }
-
-    // 이벤트 리스너들
-    btnScan.onclick = startScan;
-    btnStop.onclick = stopScan;
-
-    // 파일 선택 버튼
-    document.getElementById('btn-file-scan').onclick = () => {
-      document.getElementById('file-input').click();
-    };
-
-    document.getElementById('file-input').onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        scanFromFile(file);
-      }
-    };
-
-    // 나머지 기존 기능들...
-    document.getElementById('btn-load').onclick = async () => {
-      const boxid = document.getElementById('boxid').value.trim();
-      if(!boxid) return alert('BoxID를 입력하거나 스캔하세요.');
-      
-      try {
-        // 테스트용 더미 데이터 (실제로는 API 호출)
-        const dummyData = {
-          prefix: boxid.slice(0, -4),
-          boxes: Array.from({length: 30}, (_, i) => ({
-            BoxID: boxid.slice(0, -4) + String(i+1).padStart(4, '0'),
-            Location: `MT01-A-01-01-${String(i+1).padStart(2, '0')}`
-          }))
-        };
-        
-        window._prefix = dummyData.prefix;
-        window._boxes = dummyData.boxes;
-        renderPool(window._boxes);
-        updateStatus(`📋 ${dummyData.boxes.length}건의 작업을 불러왔습니다`, 'success');
-        
-      } catch (e) {
-        updateStatus('작업건 불러오기 실패', 'error');
-        console.error(e);
-      }
-    };
-
-    // 페이지 언로드 시 정리
-    window.addEventListener('beforeunload', () => {
-      if (html5QrCode && isScanning) {
-        html5QrCode.stop().catch(console.error);
-      }
-    });
-
-    // 브라우저 지원 확인
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      updateStatus('이 브라우저는 카메라를 지원하지 않습니다. 파일 업로드 방식을 사용하세요.', 'error');
-      btnScan.disabled = true;
-    }
-
-    // 범위 및 저장 기능들 (기존과 동일)
-    document.getElementById('btn-range').onclick = () => {
-      const s = parseInt(document.getElementById('r-start').value || '0', 10);
-      const e = parseInt(document.getElementById('r-end').value || '0', 10);
-      if(!window._boxes) return alert('먼저 [작업건 불러오기]를 해주세요.');
-      if(!(s>0 && e>=s)) return alert('올바른 범위를 입력하세요.');
-      
-      const set = new Set();
-      for (const el of poolDiv.querySelectorAll('.sel')) {
-        const tail = parseInt(el.value.slice(-4), 10);
-        if (tail>=s && tail<=e) { set.add(el.value); el.checked = true; }
-      }
-      updateStatus(`범위 선택 완료: ${s}~${e} (${set.size}건)`, 'success');
-    };
-
-    document.getElementById('btn-save-range').onclick = async () => {
-      if(!window._prefix) return alert('먼저 작업건을 불러오세요.');
-      const s = parseInt(document.getElementById('r-start').value || '0', 10);
-      const e = parseInt(document.getElementById('r-end').value || '0', 10);
-      const to = document.getElementById('to-loc').value.trim();
-      const op = document.getElementById('operator').value.trim();
-      if(!(s>0 && e>=s)) return alert('범위를 입력하세요.');
-      if(!to) return alert('도착 Location을 입력하세요.');
-      
-      // 테스트용 더미 응답
-      const moved = e - s + 1;
-      alert(`저장 완료: ${moved}건 → ${to}`);
-      updateStatus(`✅ 범위 저장 완료: ${moved}건 → ${to}`, 'success');
-    };
-
-    document.getElementById('btn-save-selected').onclick = async () => {
-      const to = document.getElementById('to-loc').value.trim();
-      const op = document.getElementById('operator').value.trim();
-      const boxids = Array.from(poolDiv.querySelectorAll('.sel:checked')).map(x=>x.value);
-      if(boxids.length===0) return alert('선택된 박스가 없습니다.');
-      if(!to) return alert('도착 Location을 입력하세요.');
-      
-      // 테스트용 더미 응답
-      alert(`저장 완료: ${boxids.length}건`);
-      updateStatus(`✅ 선택 저장 완료: ${boxids.length}건 → ${to}`, 'success');
-    };
-  </script>
+    </script>
 </body>
 </html>
