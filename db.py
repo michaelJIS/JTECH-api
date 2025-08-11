@@ -92,36 +92,81 @@ def init_schema():
 
 def _init_schema_sqlite():
     ddl = [
-        # ... (기존과 동일한 DDL 구문) ...
+        # 기존 유지 테이블: box_moves (SQLite 문법)
         """
-        CREATE TABLE IF NOT EXISTS box_moves(...);
+        CREATE TABLE IF NOT EXISTS box_moves(
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            BoxID TEXT NOT NULL,
+            Location TEXT NOT NULL,
+            Operator TEXT,
+            Warehouse TEXT,
+            CreatedAt TEXT DEFAULT (datetime('now','localtime'))
+        );
         """,
+        # 기존 로컬 이력 테이블 (location_utils의 SQLite 분기에서 사용)
         """
-        CREATE TABLE IF NOT EXISTS box_move_log(...);
+        CREATE TABLE IF NOT EXISTS box_move_log(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            BoxID TEXT NOT NULL,
+            FromLoc TEXT,
+            ToLoc TEXT NOT NULL,
+            MovedAt TEXT NOT NULL,
+            Operator TEXT,
+            Reason TEXT
+        );
         """,
+        # location_utils가 참조하는 현재 위치 테이블(없으면 최소 스키마)
         """
-        CREATE TABLE IF NOT EXISTS boxid_log(...);
+        CREATE TABLE IF NOT EXISTS boxid_log(
+            BoxID TEXT PRIMARY KEY,
+            ItemCode TEXT,
+            Qty INTEGER,
+            Status TEXT,
+            Location TEXT,
+            CreatedAt TEXT,
+            UpdatedAt TEXT
+        );
         """
     ]
-    # --- with 구문으로 리소스 자동 반환 보장 (안정성 강화) ---
+    # with 구문으로 리소스 자동 반환 보장 (안정성 강화)
     with get_conn() as conn, conn.cursor() as cur:
         for q in ddl:
             cur.execute(q)
         conn.commit()
 
 def _init_schema_postgres():
+    # Postgres 문법 (SERIAL, TIMESTAMPTZ, now())
     ddl = [
-        # ... (기존과 동일한 DDL 구문) ...
+        # boxid_log 테이블 (API가 직접 사용하는 주 테이블)
         """
-        CREATE TABLE IF NOT EXISTS box_moves(...);
+        CREATE TABLE IF NOT EXISTS boxid_log (
+            BoxID TEXT PRIMARY KEY,
+            ItemCode TEXT,
+            Qty INTEGER,
+            Status TEXT,
+            Location TEXT,
+            CreatedAt TIMESTAMPTZ DEFAULT NOW(),
+            UpdatedAt TIMESTAMPTZ
+        );
         """,
+        # 운영 이력 테이블: move_log (hybrid location_utils의 PG 분기에서 사용)
         """
-        CREATE TABLE IF NOT EXISTS move_log (...);
+        CREATE TABLE IF NOT EXISTS move_log (
+            id BIGSERIAL PRIMARY KEY,
+            box_id TEXT NOT NULL,
+            from_location TEXT,
+            to_location TEXT NOT NULL,
+            moved_by TEXT,
+            moved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            note TEXT
+        );
         """,
+        # 성능 인덱스
         "CREATE INDEX IF NOT EXISTS idx_move_log_box_id ON move_log(box_id);",
         "CREATE INDEX IF NOT EXISTS idx_move_log_moved_at ON move_log(moved_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_boxid_log_location ON boxid_log(Location text_pattern_ops);"
     ]
-    # --- with 구문으로 리소스 자동 반환 보장 (안정성 강화) ---
+    # with 구문으로 리소스 자동 반환 보장 (안정성 강화)
     with get_conn() as conn, conn.cursor() as cur:
         for q in ddl:
             cur.execute(q)
