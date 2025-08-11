@@ -225,6 +225,59 @@
             closeScannerBtn: document.getElementById('close-scanner'),
         };
 
+function startScanner(targetInput) {
+            activeInput = targetInput;
+            // ✨ constraints를 상세히 설정하여 후면 카메라 우선 사용
+            const constraints = {
+                video: {
+                    facingMode: { ideal: "environment" }
+                }
+            };
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    videoStream = stream;
+                    elements.scannerVideo.srcObject = stream;
+                    // ✨ 비디오가 재생을 시작할 수 있을 때까지 기다리는 이벤트 리스너 추가
+                    elements.scannerVideo.oncanplay = () => {
+                        elements.scannerContainer.style.display = 'block';
+                        requestAnimationFrame(tick);
+                    };
+                }).catch(err => {
+                    console.error("카메라 접근 오류:", err);
+                    showToast(`카메라 오류: ${err.name}`, 'error');
+                });
+        }
+
+        function stopScanner() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            elements.scannerContainer.style.display = 'none';
+        }
+
+        function tick() {
+            if (elements.scannerVideo.readyState > 1) { // HAVE_METADATA 이상
+                const canvas = document.createElement('canvas');
+                canvas.width = elements.scannerVideo.videoWidth;
+                canvas.height = elements.scannerVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
+                try {
+                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+                    if (code) {
+                        stopScanner();
+                        if ('vibrate' in navigator) navigator.vibrate(100);
+                        activeInput.value = code.data;
+                        if(activeInput === elements.moveStartInput) {
+                            elements.moveDisplay.textContent = code.data;
+                        }
+                        return; // 스캔 성공 시 루프 중단
+                    }
+                } catch (e) {
+                    console.error("QR 코드 인식 오류:", e);
+                }
+            }
+
         function renderScannedList() {
             elements.scannedList.innerHTML = '';
             if (scannedItems.length === 0) {
