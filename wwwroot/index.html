@@ -1,202 +1,4 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JTECH 재고 관리</title>
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --secondary-color: #6c757d;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --light-color: #f8f9fa;
-            --dark-color: #212529;
-            --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            --border-radius: 0.5rem;
-            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --input-height: 3rem;
-        }
-        body {
-            font-family: var(--font-family);
-            margin: 0;
-            background-color: var(--light-color);
-            color: var(--dark-color);
-            overscroll-behavior-y: contain;
-        }
-        .container {
-            padding: 1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            color: var(--primary-color);
-        }
-        .section {
-            background-color: #ffffff;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            padding: 1rem 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-        .section-title {
-            margin-top: 0;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        .input-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-input {
-            flex-grow: 1;
-            padding: 0 0.75rem;
-            font-size: 1rem;
-            height: var(--input-height);
-            border: 1px solid #ced4da;
-            border-radius: var(--border-radius);
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-        .btn {
-            padding: 0 1.25rem;
-            height: var(--input-height);
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            flex-shrink: 0;
-        }
-        .btn:active { transform: scale(0.97); }
-        .btn-primary { background-color: var(--primary-color); color: white; }
-        .btn-success { background-color: var(--success-color); color: white; }
-        .btn-danger { background-color: var(--danger-color); color: white; }
-        .btn-icon {
-            padding: 0;
-            width: var(--input-height);
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        .display-box {
-            background-color: var(--light-color);
-            border: 1px solid #dee2e6;
-            border-radius: var(--border-radius);
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            text-align: center;
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            min-height: 1.5rem;
-        }
-        #scanned-list {
-            list-style: none;
-            padding: 0;
-            margin: 1rem 0;
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #dee2e6;
-            border-radius: var(--border-radius);
-        }
-        #scanned-list li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-        #scanned-list li:last-child { border-bottom: none; }
-        .list-actions { display: flex; gap: 0.5rem; }
-        #scanner-container {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.8); z-index: 1000;
-        }
-        #scanner-video { width: 100%; height: 100%; object-fit: cover; }
-        #close-scanner {
-            position: absolute; top: 20px; right: 20px; font-size: 2rem; color: white;
-            background: rgba(0,0,0,0.5); border: none; border-radius: 50%; width: 44px; height: 44px;
-            cursor: pointer;
-        }
-        .toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            padding: 10px 20px; border-radius: var(--border-radius); color: white; font-weight: bold;
-            z-index: 1001; opacity: 0; transition: opacity 0.3s, bottom 0.3s;
-        }
-        .toast.show { opacity: 1; bottom: 30px; }
-        .toast.success { background-color: var(--success-color); }
-        .toast.error { background-color: var(--danger-color); }
-        .toast.info { background-color: var(--secondary-color); }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <header><h1>JTECH 재고 관리</h1></header>
-
-        <div class="section">
-            <h2 class="section-title">스캔 & 조회</h2>
-            <div class="input-group">
-                <input type="text" id="main-input" class="form-input" placeholder="Box ID 입력 또는 스캔">
-                <button id="main-scan-btn" class="btn btn-icon" aria-label="QR 스캔">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
-                </button>
-            </div>
-            <div class="list-actions" style="margin-top: 0.5rem;">
-                <button id="lookup-btn" class="btn btn-primary" style="flex-grow: 1;">위치 조회</button>
-                <button id="add-to-list-btn" class="btn btn-success" style="flex-grow: 1;">목록에 추가</button>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2 class="section-title" id="scanned-list-title">스캔 목록 (0개)</h2>
-            <ul id="scanned-list"><li>목록이 비었습니다.</li></ul>
-            <div class="list-actions" style="justify-content: flex-end;">
-                <button id="clear-all-btn" class="btn btn-danger">전체 삭제</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2 class="section-title">위치 이동</h2>
-            <div class="display-box" id="move-display">이동할 Box ID 또는 범위 시작점</div>
-            <div class="input-group">
-                <input type="text" id="move-start-input" class="form-input" placeholder="BoxID 또는 시작 시리얼">
-                <button id="move-scan-btn" class="btn btn-icon" aria-label="QR 스캔">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
-                </button>
-            </div>
-            <div class="input-group" style="margin-top: 0.5rem;">
-                <input type="number" id="move-end-input" class="form-input" placeholder="범위 이동 시, 끝 시리얼">
-            </div>
-             <div class="input-group" style="margin-top: 1rem;">
-                <input type="text" id="location-input" class="form-input" placeholder="이동할 위치" list="locations-datalist">
-                <datalist id="locations-datalist"></datalist>
-            </div>
-            <div class="list-actions" style="margin-top: 1rem;">
-                 <button id="move-btn" class="btn btn-success" style="flex-grow: 1;">이동 실행</button>
-                 <button id="bulk-move-btn" class="btn btn-primary" style="flex-grow: 1;">목록 전체 이동</button>
-            </div>
-        </div>
-
-    </div>
-
-    <div id="scanner-container">
-        <video id="scanner-video" playsinline></video>
-        <button id="close-scanner">&times;</button>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const API_BASE_URL = window.location.origin;
@@ -224,59 +26,6 @@
             scannerVideo: document.getElementById('scanner-video'),
             closeScannerBtn: document.getElementById('close-scanner'),
         };
-
-function startScanner(targetInput) {
-            activeInput = targetInput;
-            // ✨ constraints를 상세히 설정하여 후면 카메라 우선 사용
-            const constraints = {
-                video: {
-                    facingMode: { ideal: "environment" }
-                }
-            };
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(stream => {
-                    videoStream = stream;
-                    elements.scannerVideo.srcObject = stream;
-                    // ✨ 비디오가 재생을 시작할 수 있을 때까지 기다리는 이벤트 리스너 추가
-                    elements.scannerVideo.oncanplay = () => {
-                        elements.scannerContainer.style.display = 'block';
-                        requestAnimationFrame(tick);
-                    };
-                }).catch(err => {
-                    console.error("카메라 접근 오류:", err);
-                    showToast(`카메라 오류: ${err.name}`, 'error');
-                });
-        }
-
-        function stopScanner() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
-            elements.scannerContainer.style.display = 'none';
-        }
-
-        function tick() {
-            if (elements.scannerVideo.readyState > 1) { // HAVE_METADATA 이상
-                const canvas = document.createElement('canvas');
-                canvas.width = elements.scannerVideo.videoWidth;
-                canvas.height = elements.scannerVideo.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
-                try {
-                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-                    if (code) {
-                        stopScanner();
-                        if ('vibrate' in navigator) navigator.vibrate(100);
-                        activeInput.value = code.data;
-                        if(activeInput === elements.moveStartInput) {
-                            elements.moveDisplay.textContent = code.data;
-                        }
-                        return; // 스캔 성공 시 루프 중단
-                    }
-                } catch (e) {
-                    console.error("QR 코드 인식 오류:", e);
-                }
-            }
 
         function renderScannedList() {
             elements.scannedList.innerHTML = '';
@@ -319,44 +68,59 @@ function startScanner(targetInput) {
 
         function startScanner(targetInput) {
             activeInput = targetInput;
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            const constraints = { video: { facingMode: { ideal: "environment" } } };
+            
+            navigator.mediaDevices.getUserMedia(constraints)
                 .then(stream => {
                     videoStream = stream;
                     elements.scannerVideo.srcObject = stream;
-                    elements.scannerContainer.style.display = 'block';
-                    requestAnimationFrame(tick);
-                }).catch(() => showToast('카메라를 사용할 수 없습니다.', 'error'));
+                    // 비디오 메타데이터가 로드되면 재생 시도
+                    elements.scannerVideo.onloadedmetadata = () => {
+                        elements.scannerVideo.play().catch(e => console.error("비디오 재생 실패:", e));
+                    };
+                    elements.scannerVideo.oncanplay = () => {
+                        elements.scannerContainer.style.display = 'block';
+                        requestAnimationFrame(tick);
+                    };
+                }).catch(err => {
+                    console.error("카메라 접근 오류:", err);
+                    showToast(`카메라 오류: ${err.name}`, 'error');
+                });
         }
 
         function stopScanner() {
-            if (videoStream) videoStream.getTracks().forEach(track => track.stop());
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
             elements.scannerContainer.style.display = 'none';
         }
 
         function tick() {
-            if (elements.scannerVideo.readyState === elements.scannerVideo.HAVE_ENOUGH_DATA) {
+            if (elements.scannerVideo.readyState > 1) {
                 const canvas = document.createElement('canvas');
                 canvas.width = elements.scannerVideo.videoWidth;
                 canvas.height = elements.scannerVideo.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
-                const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-
-                if (code) {
-                    stopScanner();
-                    if ('vibrate' in navigator) navigator.vibrate(100);
-                    activeInput.value = code.data;
-                    if(activeInput === elements.moveStartInput) {
-                        elements.moveDisplay.textContent = code.data;
+                try {
+                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+                    if (code) {
+                        stopScanner();
+                        if ('vibrate' in navigator) navigator.vibrate(100);
+                        activeInput.value = code.data;
+                        if(activeInput === elements.moveStartInput) {
+                            elements.moveDisplay.textContent = code.data;
+                        }
+                        return;
                     }
-                } else {
-                    requestAnimationFrame(tick);
-                }
-            } else {
+                } catch (e) { console.error("QR 코드 인식 오류:", e); }
+            }
+            if (elements.scannerContainer.style.display === 'block') {
                 requestAnimationFrame(tick);
             }
         }
-
+        
+        // --- ✨ 이 부분이 아마 누락되었을 겁니다! (이벤트 리스너 연결) ---
         elements.mainScanBtn.addEventListener('click', () => startScanner(elements.mainInput));
         elements.moveScanBtn.addEventListener('click', () => startScanner(elements.moveStartInput));
         elements.closeScannerBtn.addEventListener('click', stopScanner);
@@ -436,9 +200,9 @@ function startScanner(targetInput) {
             if (!start || !to_loc) return showToast('BoxID(또는 시작)와 이동할 위치를 입력하세요.', 'error');
             
             let body;
-            if (end) { // 범위 이동
+            if (end) {
                 body = { boxid: start, start: parseInt(start.slice(-4)), end: parseInt(end), to_loc };
-            } else { // 단일 이동
+            } else {
                 body = { boxids: [start], to_loc };
             }
             executeMove(body);
@@ -473,5 +237,3 @@ function startScanner(targetInput) {
         fetchLocations();
     });
     </script>
-</body>
-</html>
