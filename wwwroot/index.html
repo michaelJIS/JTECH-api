@@ -51,7 +51,13 @@
                     const data = await response.json().catch(() => ({ detail: `서버 오류: ${response.status}` }));
                     throw new Error(data.detail);
                 }
-                return response.json();
+                // 성공적으로 json 파싱을 시도하고 실패 시 텍스트로 반환
+                const text = await response.text();
+                try {
+                    return JSON.parse(text);
+                } catch(e) {
+                    return text; // JSON이 아닌 경우 텍스트 그대로 반환
+                }
             } catch (error) {
                 showToast(error.message, 'error');
                 throw error;
@@ -61,7 +67,9 @@
         function fetchLocations() {
             apiCall('/api/locations')
                 .then(data => {
-                    elements.locationsDatalist.innerHTML = data.locations.map(loc => `<option value="${loc}"></option>`).join('');
+                    if (data && Array.isArray(data.locations)) {
+                       elements.locationsDatalist.innerHTML = data.locations.map(loc => `<option value="${loc}"></option>`).join('');
+                    }
                 })
                 .catch(err => console.error("위치 목록 로딩 실패:", err));
         }
@@ -74,14 +82,9 @@
                 .then(stream => {
                     videoStream = stream;
                     elements.scannerVideo.srcObject = stream;
-                    // 비디오 메타데이터가 로드되면 재생 시도
-                    elements.scannerVideo.onloadedmetadata = () => {
-                        elements.scannerVideo.play().catch(e => console.error("비디오 재생 실패:", e));
-                    };
-                    elements.scannerVideo.oncanplay = () => {
-                        elements.scannerContainer.style.display = 'block';
-                        requestAnimationFrame(tick);
-                    };
+                    elements.scannerVideo.play(); // ✨ 비디오 재생을 명시적으로 호출
+                    elements.scannerContainer.style.display = 'block';
+                    requestAnimationFrame(tick);
                 }).catch(err => {
                     console.error("카메라 접근 오류:", err);
                     showToast(`카메라 오류: ${err.name}`, 'error');
@@ -96,31 +99,38 @@
         }
 
         function tick() {
-            if (elements.scannerVideo.readyState > 1) {
+            if (elements.scannerContainer.style.display !== 'block') {
+                return; // 스캐너가 닫혀있으면 중단
+            }
+
+            if (elements.scannerVideo.readyState > 1) { // HAVE_METADATA 이상
                 const canvas = document.createElement('canvas');
                 canvas.width = elements.scannerVideo.videoWidth;
                 canvas.height = elements.scannerVideo.videoHeight;
+
+                if(canvas.width === 0) { // 비디오가 아직 준비 안된 경우
+                    requestAnimationFrame(tick);
+                    return;
+                }
+
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(elements.scannerVideo, 0, 0, canvas.width, canvas.height);
                 try {
                     const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-                    if (code) {
+                    if (code && code.data) { // 코드 및 데이터 존재 여부 확인
                         stopScanner();
                         if ('vibrate' in navigator) navigator.vibrate(100);
                         activeInput.value = code.data;
                         if(activeInput === elements.moveStartInput) {
                             elements.moveDisplay.textContent = code.data;
                         }
-                        return;
+                        return; // 스캔 성공 시 루프 중단
                     }
-                } catch (e) { console.error("QR 코드 인식 오류:", e); }
+                } catch (e) { /* QR 인식 중 발생하는 오류는 무시 */ }
             }
-            if (elements.scannerContainer.style.display === 'block') {
-                requestAnimationFrame(tick);
-            }
+            requestAnimationFrame(tick);
         }
         
-        // --- ✨ 이 부분이 아마 누락되었을 겁니다! (이벤트 리스너 연결) ---
         elements.mainScanBtn.addEventListener('click', () => startScanner(elements.mainInput));
         elements.moveScanBtn.addEventListener('click', () => startScanner(elements.moveStartInput));
         elements.closeScannerBtn.addEventListener('click', stopScanner);
@@ -130,7 +140,7 @@
             if (!boxid) return showToast('Box ID를 입력하세요.', 'info');
             try {
                 const data = await apiCall(`/api/box/by-id?boxid=${encodeURIComponent(boxid)}`);
-                showToast(`${data.BoxID} 위치: ${data.Location || '없음'}`, 'info');
+                if(data) showToast(`${data.BoxID} 위치: ${data.Location || '없음'}`, 'info');
             } catch(e) { /* 에러는 apiCall에서 처리 */ }
         });
 
@@ -179,15 +189,17 @@
 
             try {
                 const data = await apiCall(endpoint, options);
-                const movedCount = data.moved ?? (data.range ? `${data.range[0]}-${data.range[1]}` : 0);
-                showToast(`${movedCount} 이동 완료 → ${body.to_loc}`, 'success');
-                
-                elements.moveStartInput.value = '';
-                elements.moveEndInput.value = '';
-                elements.moveDisplay.textContent = '이동할 Box ID 또는 범위 시작점';
-                if (isBulk) {
-                    scannedItems = [];
-                    renderScannedList();
+                if(data) {
+                    const movedCount = data.moved ?? (data.range ? `${data.range[0]}-${data.range[1]}` : 0);
+                    showToast(`${movedCount} 이동 완료 → ${body.to_loc}`, 'success');
+                    
+                    elements.moveStartInput.value = '';
+                    elements.moveEndInput.value = '';
+                    elements.moveDisplay.textContent = '이동할 Box ID 또는 범위 시작점';
+                    if (isBulk) {
+                        scannedItems = [];
+                        renderScannedList();
+                    }
                 }
             } catch(e) { /* 에러는 apiCall에서 처리 */ }
         }
@@ -200,9 +212,9 @@
             if (!start || !to_loc) return showToast('BoxID(또는 시작)와 이동할 위치를 입력하세요.', 'error');
             
             let body;
-            if (end) {
+            if (end && !isNaN(parseInt(end))) { // 범위 이동
                 body = { boxid: start, start: parseInt(start.slice(-4)), end: parseInt(end), to_loc };
-            } else {
+            } else { // 단일 이동
                 body = { boxids: [start], to_loc };
             }
             executeMove(body);
